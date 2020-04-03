@@ -102,15 +102,15 @@ def worker():
     
         data = datetime.now()
         # data = datetime.strptime('2020-04-02 12:00:00', '%Y-%m-%d %H:%M:%S')
-        if int(datetime.strftime(data, '%M'))%2 == 0: x = 2
-        else: x = 3        
-        data_2 = datetime.strftime(data-timedelta(hours=1, minutes=x), '%Y-%m-%d %H:%M:00')
-        data_4 = datetime.strftime(data-timedelta(hours=1, minutes=(x+2)), '%Y-%m-%d %H:%M:00')
+        data_2 = datetime.strftime(data-timedelta(hours=1), '%Y-%m-%d %H:%M:00')
+        data_4 = datetime.strftime(data-timedelta(hours=1, minutes=2), '%Y-%m-%d %H:%M:00')
         penultimo = df.loc[data_4].astype('float')
         ultimo    = df.loc[data_2].astype('float')
         with open(LOG_FILE, 'a') as log: 
             print(data_4, ultimo.to_json(), file=log)
             print(data_2, penultimo.to_json(), file=log)
+            # print(data_4, ultimo.to_json())
+            # print(data_2, penultimo.to_json())
         log.close()
 
         if is_Sell(penultimo, ultimo): 
