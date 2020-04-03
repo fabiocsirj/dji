@@ -36,15 +36,15 @@ def get_TradeDJI():
 
 
 def schedule_job():
-    # with open(LOG_FILE, 'a') as log: print(datetime.now(), "Scheduling job...", file=log)
-    # log.close()
+    with open(LOG_FILE, 'a') as log: print(datetime.now(), "Scheduling job...", file=log)
+    log.close()
 
     schedule.every(2).tag(2).minutes.do(job)    
 
 
 def clear_job():
-    # with open(LOG_FILE, 'a') as log: print(datetime.now(), "Clear job...", file=log)
-    # log.close()
+    with open(LOG_FILE, 'a') as log: print(datetime.now(), "Clear job...", file=log)
+    log.close()
 
     schedule.clear(2)
 
@@ -87,8 +87,8 @@ def is_Buy(anterior, atual):
 
 
 def worker():
-    # with open(LOG_FILE, 'a') as log: print(datetime.now(), "Job working...", file=log)
-    # log.close()
+    with open(LOG_FILE, 'a') as log: print(datetime.now(), "Job working...", file=log)
+    log.close()
 
     trades = get_TradeDJI()
     # print(trades)
@@ -104,25 +104,27 @@ def worker():
         # data = datetime.strptime('2020-04-02 12:00:00', '%Y-%m-%d %H:%M:%S')
         if int(datetime.strftime(data, '%M'))%2 == 0: x = 2
         else: x = 3        
-        data_2 = datetime.strftime(data-timedelta(minutes=x), '%Y-%m-%d %H:%M:00')
-        data_4 = datetime.strftime(data-timedelta(minutes=(x+2)), '%Y-%m-%d %H:%M:00')
+        data_2 = datetime.strftime(data-timedelta(hours=1, minutes=x), '%Y-%m-%d %H:%M:00')
+        data_4 = datetime.strftime(data-timedelta(hours=1, minutes=(x+2)), '%Y-%m-%d %H:%M:00')
         penultimo = df.loc[data_4].astype('float')
         ultimo    = df.loc[data_2].astype('float')
-        # with open(LOG_FILE, 'a') as log: print(data_2, ultimo.to_json(), file=log)
-        # log.close()
+        with open(LOG_FILE, 'a') as log: 
+            print(data_4, ultimo.to_json(), file=log)
+            print(data_2, penultimo.to_json(), file=log)
+        log.close()
 
         if is_Sell(penultimo, ultimo): 
             ts = telegram_sendText('{} - Venda'.format(data))
-            # with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
-            # log.close()
+            with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
+            log.close()
 
         if is_Buy(penultimo, ultimo): 
             ts = telegram_sendText('{} - Compra'.format(data))
-            # with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
-            # log.close()
-    # else:
-    #     with open(LOG_FILE, 'a') as log: print(datetime.now(), "ERROR GET TRADES!", file=log)
-    #     log.close()
+            with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
+            log.close()
+    else:
+        with open(LOG_FILE, 'a') as log: print(datetime.now(), "ERROR GET TRADES!", file=log)
+        log.close()
 
 
 def job():
@@ -130,31 +132,30 @@ def job():
     t.start()
 
 
-if __name__ == '__main__':
-    # Sync
-    segundos = (60 - int(datetime.strftime(datetime.now(), '%S')) + 30) % 60
-    for s in range(segundos, 0, -1): sleep(1)
+# Sync
+segundos = (60 - int(datetime.strftime(datetime.now(), '%S')) + 30) % 60
+for s in range(segundos, 0, -1): sleep(1)
 
-    # with open(LOG_FILE, 'a') as log: print(datetime.now(), 'STARTING...', file=log)
-    # log.close()
+with open(LOG_FILE, 'a') as log: print(datetime.now(), 'STARTING...', file=log)
+log.close()
 
-    schedule.every().monday.at("10:30").do(schedule_job)
-    schedule.every().monday.at("17:00").do(clear_job)
-    schedule.every().tuesday.at("10:30").do(schedule_job)
-    schedule.every().tuesday.at("17:00").do(clear_job)
-    schedule.every().wednesday.at("10:30").do(schedule_job)
-    schedule.every().wednesday.at("17:00").do(clear_job)
-    schedule.every().thursday.at("10:30").do(schedule_job)
-    schedule.every().thursday.at("17:00").do(clear_job)
-    schedule.every().friday.at("10:30").do(schedule_job)
-    schedule.every().friday.at("17:00").do(clear_job)
+schedule.every().monday.at("10:30").do(schedule_job)
+schedule.every().monday.at("17:00").do(clear_job)
+schedule.every().tuesday.at("10:30").do(schedule_job)
+schedule.every().tuesday.at("17:00").do(clear_job)
+schedule.every().wednesday.at("10:30").do(schedule_job)
+schedule.every().wednesday.at("17:00").do(clear_job)
+schedule.every().thursday.at("10:30").do(schedule_job)
+schedule.every().thursday.at("17:00").do(clear_job)
+schedule.every().friday.at("10:30").do(schedule_job)
+schedule.every().friday.at("17:00").do(clear_job)
 
-    while True:
-        # with open(LOG_FILE, 'a') as log: 
-        #     print('\n{}'.format(datetime.now()), 'SCHEDULE:', file=log)
-        #     for s in schedule.jobs: print(datetime.now(), s, file=log)
-        #     print('================================================================================', file=log)
-        # log.close()
+while True:
+    with open(LOG_FILE, 'a') as log: 
+        print('\n{}'.format(datetime.now()), 'SCHEDULE:', file=log)
+        for s in schedule.jobs: print(datetime.now(), s, file=log)
+        print('================================================================================', file=log)
+    log.close()
 
-        schedule.run_pending()
-        sleep(60)
+    schedule.run_pending()
+    sleep(60)
