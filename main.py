@@ -13,7 +13,6 @@ def telegram_sendText(message):
     bot_token = tokens.TELEGRAM_TOKEN
     bot_chatID = '986525812'
     send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=Markdown&text=' + message
-
     try:
         response = requests.get(send_text)
         return response.json()
@@ -26,8 +25,8 @@ def get_TradeDJI():
     interval = 2 # minutes
     days = 1
     token = tokens.WORLDTRADINGDATA_TOKEN
-    # url = 'https://intraday.worldtradingdata.com/api/v1/intraday?symbol={}&interval={}&range={}&api_token={}'.format(simbol, interval, days, token)
-    url = 'https://intraday.worldtradingdata.com/api/v1/intraday?symbol=SNAP&interval=1&range=1&api_token=demo'
+    url = 'https://intraday.worldtradingdata.com/api/v1/intraday?symbol={}&interval={}&range={}&api_token={}'.format(simbol, interval, days, token)
+    # url = 'https://intraday.worldtradingdata.com/api/v1/intraday?symbol=SNAP&interval=1&range=1&api_token=demo'
     try:
         dji = requests.get(url)
         trades = dji.json()
@@ -101,16 +100,24 @@ def worker():
         # with pd.option_context('display.max_rows', None, 'display.width', 300):
         #     print(df)
     
-        penultimo = df.iloc[-4].astype('float')
-        ultimo    = df.iloc[-3].astype('float')
+        data = datetime.now()
+        # data = datetime.strptime('2020-04-02 12:00:00', '%Y-%m-%d %H:%M:%S')
+        if int(datetime.strftime(data, '%M'))%2 == 0: x = 2
+        else: x = 3        
+        data_2 = datetime.strftime(data-timedelta(minutes=x), '%Y-%m-%d %H:%M:00')
+        data_4 = datetime.strftime(data-timedelta(minutes=(x+2)), '%Y-%m-%d %H:%M:00')
+        penultimo = df.loc[data_4].astype('float')
+        ultimo    = df.loc[data_2].astype('float')
+        with open(LOG_FILE, 'a') as log: print(data_2, ultimo.to_json(), file=log)
+        log.close()
 
         if is_Sell(penultimo, ultimo): 
-            ts = telegram_sendText('Venda')
+            ts = telegram_sendText('{} - Venda'.format(data))
             with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
             log.close()
 
         if is_Buy(penultimo, ultimo): 
-            ts = telegram_sendText('Compra')
+            ts = telegram_sendText('{} - Compra'.format(data))
             with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
             log.close()
     else:
@@ -150,4 +157,3 @@ while True:
 
     schedule.run_pending()
     sleep(60)
-
