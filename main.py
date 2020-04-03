@@ -130,30 +130,31 @@ def job():
     t.start()
 
 
-# Sync
-segundos = (60 - int(datetime.strftime(datetime.now(), '%S')) + 30) % 60
-for s in range(segundos, 0, -1): sleep(1)
+if __name__ == '__main__':
+    # Sync
+    segundos = (60 - int(datetime.strftime(datetime.now(), '%S')) + 30) % 60
+    for s in range(segundos, 0, -1): sleep(1)
 
-# with open(LOG_FILE, 'a') as log: print(datetime.now(), 'STARTING...', file=log)
-# log.close()
-
-schedule.every().monday.at("10:30").do(schedule_job)
-schedule.every().monday.at("17:00").do(clear_job)
-schedule.every().tuesday.at("10:30").do(schedule_job)
-schedule.every().tuesday.at("17:00").do(clear_job)
-schedule.every().wednesday.at("10:30").do(schedule_job)
-schedule.every().wednesday.at("17:00").do(clear_job)
-schedule.every().thursday.at("10:30").do(schedule_job)
-schedule.every().thursday.at("17:00").do(clear_job)
-schedule.every().friday.at("10:30").do(schedule_job)
-schedule.every().friday.at("17:00").do(clear_job)
-
-while True:
-    # with open(LOG_FILE, 'a') as log: 
-    #     print('\n{}'.format(datetime.now()), 'SCHEDULE:', file=log)
-    #     for s in schedule.jobs: print(datetime.now(), s, file=log)
-    #     print('================================================================================', file=log)
+    # with open(LOG_FILE, 'a') as log: print(datetime.now(), 'STARTING...', file=log)
     # log.close()
 
-    schedule.run_pending()
-    sleep(60)
+    schedule.every().monday.at("10:30").do(schedule_job)
+    schedule.every().monday.at("17:00").do(clear_job)
+    schedule.every().tuesday.at("10:30").do(schedule_job)
+    schedule.every().tuesday.at("17:00").do(clear_job)
+    schedule.every().wednesday.at("10:30").do(schedule_job)
+    schedule.every().wednesday.at("17:00").do(clear_job)
+    schedule.every().thursday.at("10:30").do(schedule_job)
+    schedule.every().thursday.at("17:00").do(clear_job)
+    schedule.every().friday.at("10:30").do(schedule_job)
+    schedule.every().friday.at("17:00").do(clear_job)
+
+    while True:
+        # with open(LOG_FILE, 'a') as log: 
+        #     print('\n{}'.format(datetime.now()), 'SCHEDULE:', file=log)
+        #     for s in schedule.jobs: print(datetime.now(), s, file=log)
+        #     print('================================================================================', file=log)
+        # log.close()
+
+        schedule.run_pending()
+        sleep(60)
