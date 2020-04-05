@@ -1,12 +1,13 @@
 import threading
 import pandas as pd
+import numpy as np
 import requests
 from datetime import datetime, timedelta
 from time import sleep
-import schedule
 import tokens
 
 LOG_FILE = 'DJI.log'
+# data = datetime.strptime('2020-04-03 16:44:00', '%Y-%m-%d %H:%M:%S')
 
 
 def telegram_sendText(message):
@@ -22,31 +23,16 @@ def telegram_sendText(message):
 
 def get_TradeDJI():
     simbol = '^DJI'
-    interval = 2 # minutes
-    days = 1
-    token = tokens.WORLDTRADINGDATA_TOKEN
-    url = 'https://intraday.worldtradingdata.com/api/v1/intraday?symbol={}&interval={}&range={}&api_token={}'.format(simbol, interval, days, token)
-    # url = 'https://intraday.worldtradingdata.com/api/v1/intraday?symbol=SNAP&interval=1&range=1&api_token=demo'
+    interval = 1 # minutes    
+    token = tokens.ALPHAVANTAGE_TOKEN
+    url = 'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={}&interval={}min&apikey={}'.format(simbol, interval, token)
     try:
         dji = requests.get(url)
         trades = dji.json()
-        return trades['intraday']
+        # print(trades)
+        return trades['Time Series ({}min)'.format(interval)]
     except:
         return None
-
-
-def schedule_job():
-    with open(LOG_FILE, 'a') as log: print(datetime.now(), "Scheduling job...", file=log)
-    log.close()
-
-    schedule.every(2).tag(2).minutes.do(job)    
-
-
-def clear_job():
-    with open(LOG_FILE, 'a') as log: print(datetime.now(), "Clear job...", file=log)
-    log.close()
-
-    schedule.clear(2)
 
 
 def get_bb_rsi(df):
@@ -91,26 +77,33 @@ def worker():
     log.close()
 
     trades = get_TradeDJI()
-    # print(trades)
     
     if trades:
+        trades = eval(str(trades).replace('1. open', 'open').replace('2. high', 'high').replace('3. low', 'low').replace('4. close', 'close').replace('5. volume', 'volume'))
+
         df = pd.DataFrame.from_dict(trades, orient='index')
         df = df[::-1]
-        df = get_bb_rsi(df)
+        df1 = df[::2]
+        df2 = df[1::2]
+        dfx = df2['close'].to_frame()
+        dfx['open'] = df1['open'].values        
+        dfx['high'] = np.maximum(df1['high'].astype('float').values, df2['high'].astype('float').values)
+        dfx['low'] = np.minimum(df1['low'].astype('float').values, df2['low'].astype('float').values)        
+        dfx['volume'] = np.add(df1['volume'].astype('float').values, df2['volume'].astype('float').values)
+        dfx = dfx[['open', 'high', 'low', 'close', 'volume']]
+
+        df = get_bb_rsi(dfx)
         # with pd.option_context('display.max_rows', None, 'display.width', 300):
         #     print(df)
     
         data = datetime.now()
-        # data = datetime.strptime('2020-04-02 12:00:00', '%Y-%m-%d %H:%M:%S')
-        data_2 = datetime.strftime(data-timedelta(hours=1, minutes=2), '%Y-%m-%d %H:%M:00')
-        data_4 = datetime.strftime(data-timedelta(hours=1, minutes=4), '%Y-%m-%d %H:%M:00')
-        penultimo = df.loc[data_4].astype('float')
-        ultimo    = df.loc[data_2].astype('float')
-        with open(LOG_FILE, 'a') as log: 
-            print(data_4, penultimo.to_json(), file=log)
-            print(data_2, ultimo.to_json(), file=log)
-            # print(data_4, penultimo.to_json())
-            # print(data_2, ultimo.to_json())
+        data_p = datetime.strftime(data-timedelta(hours=1, minutes=2), '%Y-%m-%d %H:%M:00')
+        data_u = datetime.strftime(data-timedelta(hours=1), '%Y-%m-%d %H:%M:00')        
+        penultimo = df.loc[data_p].astype('float')
+        ultimo    = df.loc[data_u].astype('float')
+        with open(LOG_FILE, 'a') as log:
+            print(data_p, penultimo.to_json(), file=log)
+            print(data_u, ultimo.to_json(), file=log)
         log.close()
 
         if is_Sell(penultimo, ultimo): 
@@ -134,28 +127,15 @@ def job():
 
 # Sync
 segundos = (60 - int(datetime.strftime(datetime.now(), '%S')) + 30) % 60
-for s in range(segundos, 0, -1): sleep(1)
+for s in range(segundos, 0, -1):
+    print('\rComeça em {}s'.format(s), end='')
+    sleep(1)
 
 with open(LOG_FILE, 'a') as log: print(datetime.now(), 'STARTING...', file=log)
 log.close()
 
-schedule.every().monday.at("10:30").do(schedule_job)
-schedule.every().monday.at("17:00").do(clear_job)
-schedule.every().tuesday.at("10:30").do(schedule_job)
-schedule.every().tuesday.at("17:00").do(clear_job)
-schedule.every().wednesday.at("10:30").do(schedule_job)
-schedule.every().wednesday.at("17:00").do(clear_job)
-schedule.every().thursday.at("10:30").do(schedule_job)
-schedule.every().thursday.at("17:00").do(clear_job)
-schedule.every().friday.at("10:30").do(schedule_job)
-schedule.every().friday.at("17:00").do(clear_job)
-
 while True:
-    with open(LOG_FILE, 'a') as log: 
-        print('\n{}'.format(datetime.now()), 'SCHEDULE:', file=log)
-        for s in schedule.jobs: print(datetime.now(), s, file=log)
-        print('================================================================================', file=log)
-    log.close()
-
-    schedule.run_pending()
-    sleep(60)
+    # data = data+timedelta(minutes=2)
+    
+    job()
+    sleep(120)
