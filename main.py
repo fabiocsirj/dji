@@ -84,17 +84,8 @@ def worker():
 
         df = pd.DataFrame.from_dict(trades, orient='index')
         df = df[::-1]
-
-        first = df.iloc[0].name
-        first_date = datetime.strptime(first, '%Y-%m-%d %H:%M:%S')
-        first_minute = int(datetime.strftime(first_date, '%M'))
-        print(first_minute)
-        if first_minute%2 == 0:
-            df1 = df[1::2]
-            df2 = df[2::2]
-        else:
-            df1 = df[::2]
-            df2 = df[1::2]
+        df1 = df[::2]
+        df2 = df[1::2]
         
         dfx = df2['close'].to_frame()
         dfx['open'] = df1['open'].values
@@ -137,7 +128,7 @@ def job():
 
 
 # Sync
-segundos = (60 - int(datetime.strftime(datetime.now(), '%S')) + 30) % 60
+segundos = (60 - int(datetime.strftime(datetime.now(), '%S')) + 10) % 60
 for s in range(segundos, 0, -1):
     print('\rComeça em {}s'.format(s), end='')
     sleep(1)
