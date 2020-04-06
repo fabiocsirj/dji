@@ -86,7 +86,7 @@ def worker():
         df = df[::-1]
         df1 = df[::2]
         df2 = df[1::2]
-        
+
         dfx = df2['close'].to_frame()
         dfx['open'] = df1['open'].values
         dfx['high'] = np.maximum(df1['high'].astype('float').values, df2['high'].astype('float').values)
@@ -99,8 +99,8 @@ def worker():
         #     print(df)
     
         data = datetime.now()
-        data_p = datetime.strftime(data-timedelta(hours=1, minutes=2), '%Y-%m-%d %H:%M:00')
-        data_u = datetime.strftime(data-timedelta(hours=1), '%Y-%m-%d %H:%M:00')        
+        data_p = datetime.strftime(data-timedelta(hours=1, minutes=3), '%Y-%m-%d %H:%M:00')
+        data_u = datetime.strftime(data-timedelta(hours=1, minutes=1), '%Y-%m-%d %H:%M:00')        
         penultimo = df.loc[data_p].astype('float')
         ultimo    = df.loc[data_u].astype('float')
         with open(LOG_FILE, 'a') as log:
