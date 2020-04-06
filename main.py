@@ -77,16 +77,27 @@ def worker():
     log.close()
 
     trades = get_TradeDJI()
+    # print(trades)
     
     if trades:
         trades = eval(str(trades).replace('1. open', 'open').replace('2. high', 'high').replace('3. low', 'low').replace('4. close', 'close').replace('5. volume', 'volume'))
 
         df = pd.DataFrame.from_dict(trades, orient='index')
         df = df[::-1]
-        df1 = df[::2]
-        df2 = df[1::2]
+
+        first = df.iloc[0].name
+        first_date = datetime.strptime(first, '%Y-%m-%d %H:%M:%S')
+        first_minute = int(datetime.strftime(first_date, '%M'))
+        print(first_minute)
+        if first_minute%2 == 0:
+            df1 = df[1::2]
+            df2 = df[2::2]
+        else:
+            df1 = df[::2]
+            df2 = df[1::2]
+        
         dfx = df2['close'].to_frame()
-        dfx['open'] = df1['open'].values        
+        dfx['open'] = df1['open'].values
         dfx['high'] = np.maximum(df1['high'].astype('float').values, df2['high'].astype('float').values)
         dfx['low'] = np.minimum(df1['low'].astype('float').values, df2['low'].astype('float').values)        
         dfx['volume'] = np.add(df1['volume'].astype('float').values, df2['volume'].astype('float').values)
