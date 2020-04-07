@@ -12,7 +12,7 @@ LOG_FILE = 'DJI.log'
 
 def telegram_sendText(message):
     bot_token = tokens.TELEGRAM_TOKEN
-    bot_chatID = '986525812'
+    bot_chatID = '-442162713'
     send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=Markdown&text=' + message
     try:
         response = requests.get(send_text)
@@ -108,13 +108,13 @@ def worker():
             print(data_u, ultimo.to_json(), file=log)
         log.close()
 
-        if is_Sell(penultimo, ultimo): 
-            ts = telegram_sendText('{} - Venda'.format(data))
+        if is_Sell(penultimo, ultimo):            
+            ts = telegram_sendText('{} - Venda'.format(data_u))
             with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
             log.close()
 
         if is_Buy(penultimo, ultimo): 
-            ts = telegram_sendText('{} - Compra'.format(data))
+            ts = telegram_sendText('{} - Compra'.format(data_u))
             with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
             log.close()
     else:
