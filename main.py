@@ -12,7 +12,7 @@ LOG_FILE = 'DJI.log'
 
 def telegram_sendText(message):
     bot_token = tokens.TELEGRAM_TOKEN
-    bot_chatID = '-442162713'
+    bot_chatID = '-1001435946491'
     send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=Markdown&text=' + message
     try:
         response = requests.get(send_text)
@@ -45,14 +45,20 @@ def get_bb_rsi(df):
     df['bb_up'] = bb_up
     df['bb_dw'] = bb_dw
 
-    # Relative Strength Index
-    u = df['close'].to_frame()
-    d = df['close'].to_frame()
-    u[df['close'] < df['open']] = 0
-    d[df['close'] > df['open']] = 0
-    rm14_u = u.rolling(window=9).mean()
-    rm14_d = d.rolling(window=9).mean()
-    rsi = 100 - (100 / (1 + rm14_u / rm14_d))
+    # Relative Strength Index (Simple)
+    periods=9
+    u = (df['close'] - df['open']).to_frame()
+    u.loc[df['close'] < df['open']] = 0
+    d = (df['open'] - df['close']).to_frame()
+    d.loc[df['close'] > df['open']] = 0
+    rm_u = u.rolling(window=periods).mean()
+    rm_d = d.rolling(window=periods).mean()
+    # Relative Strength Index (Classic)
+    for i in range(periods, df['close'].size): 
+        rm_u.iloc[i] = (rm_u.iloc[i-1] * (periods-1) + u.iloc[i]) / periods
+        rm_d.iloc[i] = (rm_d.iloc[i-1] * (periods-1) + d.iloc[i]) / periods
+    ###
+    rsi = 100 - (100 / (1 + rm_u / rm_d))
     df['rsi'] = rsi
 
     return df
@@ -87,8 +93,8 @@ def worker():
         df1 = df[::2]
         df2 = df[1::2]
 
-        dfx = df2['close'].to_frame()
-        dfx['open'] = df1['open'].values
+        dfx = df2['close'].to_frame().astype('float')
+        dfx['open'] = df1['open'].astype('float').values
         dfx['high'] = np.maximum(df1['high'].astype('float').values, df2['high'].astype('float').values)
         dfx['low'] = np.minimum(df1['low'].astype('float').values, df2['low'].astype('float').values)        
         dfx['volume'] = np.add(df1['volume'].astype('float').values, df2['volume'].astype('float').values)
@@ -138,6 +144,5 @@ log.close()
 
 while True:
     # data = data+timedelta(minutes=2)
-    
     job()
     sleep(120)
