@@ -141,6 +141,7 @@ for s in range(segundos, 0, -1):
 
 with open(LOG_FILE, 'a') as log: print(datetime.now(), 'STARTING...', file=log)
 log.close()
+telegram_sendText('{} - Starting...'.format(datetime.now()))
 
 while True:
     # data = data+timedelta(minutes=2)
