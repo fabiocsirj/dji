@@ -103,28 +103,34 @@ def worker():
         df = get_bb_rsi(dfx)
         # with pd.option_context('display.max_rows', None, 'display.width', 300):
         #     print(df)
-    
-        data = datetime.now()
-        data_p = datetime.strftime(data-timedelta(hours=1, minutes=3), '%Y-%m-%d %H:%M:00')
-        data_u = datetime.strftime(data-timedelta(hours=1, minutes=1), '%Y-%m-%d %H:%M:00')        
-        penultimo = df.loc[data_p].astype('float')
-        ultimo    = df.loc[data_u].astype('float')
-        with open(LOG_FILE, 'a') as log:
-            print(data_p, penultimo.to_json(), file=log)
-            print(data_u, ultimo.to_json(), file=log)
-        log.close()
 
-        if is_Sell(penultimo, ultimo):            
-            ts = telegram_sendText('{} - Venda'.format(data_u))
-            with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
+        try:
+            data = datetime.now()
+            data_p = datetime.strftime(data-timedelta(hours=1, minutes=3), '%Y-%m-%d %H:%M:00')
+            data_u = datetime.strftime(data-timedelta(hours=1, minutes=1), '%Y-%m-%d %H:%M:00')        
+            penultimo = df.loc[data_p].astype('float')
+            ultimo    = df.loc[data_u].astype('float')
+            with open(LOG_FILE, 'a') as log:
+                print(data_p, penultimo.to_json(), file=log)
+                print(data_u, ultimo.to_json(), file=log)
             log.close()
 
-        if is_Buy(penultimo, ultimo): 
-            ts = telegram_sendText('{} - Compra'.format(data_u))
-            with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
+            if is_Sell(penultimo, ultimo):
+                ts = telegram_sendText('{} - Venda'.format(data_u))
+                with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
+                log.close()
+
+            if is_Buy(penultimo, ultimo): 
+                ts = telegram_sendText('{} - Compra'.format(data_u))
+                with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
+                log.close()
+        
+        except:
+            with open(LOG_FILE, 'a') as log: print(datetime.now(), "Erro no Dataframe!!!", file=log)
             log.close()
+
     else:
-        with open(LOG_FILE, 'a') as log: print(datetime.now(), "ERROR GET TRADES!", file=log)
+        with open(LOG_FILE, 'a') as log: print(datetime.now(), "Erro get trades!!!", file=log)
         log.close()
 
 
