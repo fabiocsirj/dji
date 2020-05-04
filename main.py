@@ -80,14 +80,14 @@ def worker():
 
     segundos = int(datetime.strftime(datetime.now(), '%S'))
     tsnow00 = int(datetime.now().timestamp()) - segundos
-    trades = get_TradeDJI(tsnow00-(42*60), tsnow00)
-    
+    trades = get_TradeDJI(tsnow00-(44*60), tsnow00)
     if trades['s'] == 'ok':
         df = pd.DataFrame()
-        i = 0
+        i = len(trades['t']) - 42
         t, o, c = [], [], []
         while i < len(trades['t']):
-            t.append(trades['t'][i])
+            data = datetime.fromtimestamp(trades['t'][i])
+            t.append(data.strftime("%d/%m/%Y %H:%M"))
             o.append(trades['o'][i])
             c.append(trades['c'][i+1])
             i += 2
@@ -103,8 +103,8 @@ def worker():
             penultimo = df.iloc[-2].astype('float')
             ultimo    = df.iloc[-1].astype('float')
             with open(LOG_FILE, 'a') as log:
-                print(datetime.fromtimestamp(penultimo['time']), penultimo.to_json(), file=log)
-                print(datetime.fromtimestamp(ultimo['time']), ultimo.to_json(), file=log)
+                print(penultimo['time'], penultimo.to_json(), file=log)
+                print(ultimo['time'], ultimo.to_json(), file=log)
             log.close()
 
             if is_Sell(penultimo, ultimo):
