@@ -7,8 +7,6 @@ from time import sleep
 import tokens
 
 LOG_FILE = 'DJI.log'
-# data = datetime.strptime('2020-04-03 16:44:00', '%Y-%m-%d %H:%M:%S')
-
 
 def telegram_sendText(message):
     bot_token = tokens.TELEGRAM_TOKEN
@@ -21,18 +19,16 @@ def telegram_sendText(message):
         return 'ERROR TELEGRAM SEND!'
     
 
-def get_TradeDJI():
+def get_TradeDJI(from_timestamp, to_timestamp):
     simbol = '^DJI'
     interval = 1 # minutes    
-    token = tokens.ALPHAVANTAGE_TOKEN
-    url = 'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={}&interval={}min&apikey={}'.format(simbol, interval, token)
+    token = tokens.FINNHUB
+    url = 'https://finnhub.io/api/v1/stock/candle?symbol={}&resolution={}&from={}&to={}&token={}'.format(simbol, interval, from_timestamp, to_timestamp, token)
     try:
         dji = requests.get(url)
-        trades = dji.json()
-        # print(trades)
-        return trades['Time Series ({}min)'.format(interval)]
+        return dji.json()
     except:
-        return None
+        return {'s': 'error'}
 
 
 def get_bb_rsi(df):
@@ -82,46 +78,42 @@ def worker():
     with open(LOG_FILE, 'a') as log: print(datetime.now(), "Job working...", file=log)
     log.close()
 
-    trades = get_TradeDJI()
-    # print(trades)
+    segundos = int(datetime.strftime(datetime.now(), '%S'))
+    tsnow00 = int(datetime.now().timestamp()) - segundos
+    trades = get_TradeDJI(tsnow00-(42*60), tsnow00)
     
-    if trades:
-        trades = eval(str(trades).replace('1. open', 'open').replace('2. high', 'high').replace('3. low', 'low').replace('4. close', 'close').replace('5. volume', 'volume'))
+    if trades['s'] == 'ok':
+        df = pd.DataFrame()
+        i = 0
+        t, o, c = [], [], []
+        while i < len(trades['t']):
+            t.append(trades['t'][i])
+            o.append(trades['o'][i])
+            c.append(trades['c'][i+1])
+            i += 2
+        df['time']  = t
+        df['open']  = o
+        df['close'] = c
 
-        df = pd.DataFrame.from_dict(trades, orient='index')
-        df = df[::-1]
-        df1 = df[::2]
-        df2 = df[1::2]
-
-        dfx = df2['close'].to_frame().astype('float')
-        dfx['open'] = df1['open'].astype('float').values
-        dfx['high'] = np.maximum(df1['high'].astype('float').values, df2['high'].astype('float').values)
-        dfx['low'] = np.minimum(df1['low'].astype('float').values, df2['low'].astype('float').values)        
-        dfx['volume'] = np.add(df1['volume'].astype('float').values, df2['volume'].astype('float').values)
-        dfx = dfx[['open', 'high', 'low', 'close', 'volume']]
-
-        df = get_bb_rsi(dfx)
+        df = get_bb_rsi(df)
         # with pd.option_context('display.max_rows', None, 'display.width', 300):
         #     print(df)
 
         try:
-            data = datetime.now()
-            data_p = datetime.strftime(data-timedelta(hours=1, minutes=3), '%Y-%m-%d %H:%M:00')
-            data_u = datetime.strftime(data-timedelta(hours=1, minutes=1), '%Y-%m-%d %H:%M:00')        
-            penultimo = df.loc[data_p].astype('float')
-            ultimo    = df.loc[data_u].astype('float')
+            penultimo = df.iloc[-2].astype('float')
+            ultimo    = df.iloc[-1].astype('float')
             with open(LOG_FILE, 'a') as log:
-                print(data_p, penultimo.to_json(), file=log)
-                print(data_u, ultimo.to_json(), file=log)
+                print(datetime.fromtimestamp(penultimo['time']), penultimo.to_json(), file=log)
+                print(datetime.fromtimestamp(ultimo['time']), ultimo.to_json(), file=log)
             log.close()
 
             if is_Sell(penultimo, ultimo):
-                ts = telegram_sendText('{} - Venda'.format(data_u))
+                ts = telegram_sendText('Venda')
                 with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
                 log.close()
 
-            if is_Buy(penultimo, ultimo): 
-                ts = telegram_sendText('{} - Compra'.format(data_u))
+            if is_Buy(penultimo, ultimo):
+                ts = telegram_sendText('Compra')
                 with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
                 log.close()
         
@@ -150,6 +142,5 @@ log.close()
 telegram_sendText('{} - Starting...'.format(datetime.now()))
 
 while True:
-    # data = data+timedelta(minutes=2)
     job()
     sleep(120)
