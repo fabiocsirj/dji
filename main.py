@@ -86,8 +86,7 @@ def worker():
         i = len(trades['t']) - 42
         t, o, c = [], [], []
         while i < len(trades['t']):
-            data = datetime.fromtimestamp(trades['t'][i])
-            t.append(data.strftime("%d/%m/%Y %H:%M"))
+            t.append(trades['t'][i])
             o.append(trades['o'][i])
             c.append(trades['c'][i+1])
             i += 2
@@ -100,11 +99,11 @@ def worker():
         #     print(df)
 
         try:
-            penultimo = df.iloc[-2].astype('float')
-            ultimo    = df.iloc[-1].astype('float')
+            penultimo = df.iloc[-2]
+            ultimo    = df.iloc[-1]
             with open(LOG_FILE, 'a') as log:
-                print(penultimo['time'], penultimo.to_json(), file=log)
-                print(ultimo['time'], ultimo.to_json(), file=log)
+                print(datetime.fromtimestamp(penultimo['time']).strftime("%d/%m/%Y %H:%M"), penultimo.to_json(), file=log)
+                print(datetime.fromtimestamp(ultimo['time']).strftime("%d/%m/%Y %H:%M"), ultimo.to_json(), file=log)
             log.close()
 
             if is_Sell(penultimo, ultimo):
