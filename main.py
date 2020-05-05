@@ -1,8 +1,7 @@
 import threading
 import pandas as pd
-import numpy as np
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 from time import sleep
 import tokens
 
@@ -24,6 +23,7 @@ def get_TradeDJI(from_timestamp, to_timestamp):
     interval = 1 # minutes    
     token = tokens.FINNHUB
     url = 'https://finnhub.io/api/v1/stock/candle?symbol={}&resolution={}&from={}&to={}&token={}'.format(simbol, interval, from_timestamp, to_timestamp, token)
+    # print('Get URL:', url)
     try:
         dji = requests.get(url)
         return dji.json()
@@ -78,14 +78,24 @@ def worker():
     with open(LOG_FILE, 'a') as log: print(datetime.now(), "Job working...", file=log)
     log.close()
 
-    segundos = int(datetime.strftime(datetime.now(), '%S'))
-    tsnow00 = int(datetime.now().timestamp()) - segundos
-    trades = get_TradeDJI(tsnow00-(44*60), tsnow00)
+    size = 0
+    offset = 40
+    while size < 42:
+        if size > 0: sleep(2)
+        offset += 2
+        now = datetime.now()
+        # now = datetime.strptime("04/05/2020 12:00:00", "%d/%m/%Y %H:%M:%S")
+        segundos = int(datetime.strftime(now, '%S'))
+        tsnow00 = int(now.timestamp()) - segundos
+        trades = get_TradeDJI(tsnow00-(offset*60), tsnow00)
+        if trades['s'] == 'ok': size = len(trades['t'])
+        else: break
+
     if trades['s'] == 'ok':
         df = pd.DataFrame()
-        i = len(trades['t']) - 42
+        i = size - 42
         t, o, c = [], [], []
-        while i < len(trades['t']):
+        while i < size:
             t.append(trades['t'][i])
             o.append(trades['o'][i])
             c.append(trades['c'][i+1])
@@ -97,6 +107,9 @@ def worker():
         df = get_bb_rsi(df)
         # with pd.option_context('display.max_rows', None, 'display.width', 300):
         #     print(df)
+        #     df2 = df.copy()
+        #     df2['time'] = df2['time'].apply(lambda x: datetime.fromtimestamp(x))
+        #     print(df2)
 
         try:
             penultimo = df.iloc[-2]
@@ -108,20 +121,20 @@ def worker():
 
             if is_Sell(penultimo, ultimo):
                 ts = telegram_sendText('Venda')
-                with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
+                with open(LOG_FILE, 'a') as log: print(datetime.now().strftime("%d/%m/%Y %H:%M"), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
                 log.close()
 
             if is_Buy(penultimo, ultimo):
                 ts = telegram_sendText('Compra')
-                with open(LOG_FILE, 'a') as log: print(datetime.now(), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
+                with open(LOG_FILE, 'a') as log: print(datetime.now().strftime("%d/%m/%Y %H:%M"), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
                 log.close()
         
         except:
-            with open(LOG_FILE, 'a') as log: print(datetime.now(), "Erro no Dataframe!!!", file=log)
+            with open(LOG_FILE, 'a') as log: print(datetime.now().strftime("%d/%m/%Y %H:%M"), "Erro no Dataframe!!!", file=log)
             log.close()
 
     else:
-        with open(LOG_FILE, 'a') as log: print(datetime.now(), "Erro get trades!!!", file=log)
+        with open(LOG_FILE, 'a') as log: print(datetime.now().strftime("%d/%m/%Y %H:%M"), "Erro get_TradeDJI!!!", file=log)
         log.close()
 
 
@@ -131,8 +144,12 @@ def job():
 
 
 # Sync
-segundos = (60 - int(datetime.strftime(datetime.now(), '%S')) + 10) % 60
-for s in range(segundos, 0, -1):
+now = datetime.now()
+segundos = int(datetime.strftime(now, '%S'))
+minutos = int(datetime.strftime(now, '%M'))
+par = (1-minutos%2) * 60
+espera = (10 + 60 + par - segundos) % 120
+for s in range(espera, 0, -1):
     print('\rComeça em {}s'.format(s), end='')
     sleep(1)
 
