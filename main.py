@@ -128,7 +128,7 @@ def worker():
                 ts = telegram_sendText('Compra')
                 with open(LOG_FILE, 'a') as log: print(datetime.now().strftime("%d/%m/%Y %H:%M"), 'TELEGRAM OUTPUT: {}'.format(ts), file=log)
                 log.close()
-        
+
         except:
             with open(LOG_FILE, 'a') as log: print(datetime.now().strftime("%d/%m/%Y %H:%M"), "Erro no Dataframe!!!", file=log)
             log.close()
@@ -153,9 +153,9 @@ for s in range(espera, 0, -1):
     print('\rComeça em {}s'.format(s), end='')
     sleep(1)
 
-with open(LOG_FILE, 'a') as log: print(datetime.now(), 'STARTING...', file=log)
+telegram_sendText('Starting...')
+with open(LOG_FILE, 'a') as log: print(datetime.now().strftime("%d/%m/%Y %H:%M"), 'STARTING...', file=log)
 log.close()
-telegram_sendText('{} - Starting...'.format(datetime.now()))
 
 while True:
     job()
