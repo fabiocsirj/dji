@@ -75,7 +75,7 @@ def is_Buy(anterior, atual):
 
 
 def worker():
-    with open(LOG_FILE, 'a') as log: print(datetime.now(), "Job working...", file=log)
+    with open(LOG_FILE, 'a') as log: print(datetime.now().strftime("%d/%m/%Y %H:%M"), "Job working...", file=log)
     log.close()
 
     size = 0
